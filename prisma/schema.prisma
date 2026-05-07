@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USTADZ
+  ORANG_TUA
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(ORANG_TUA)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ustadz Ustadz? // One-to-One
+  santri Santri[] // One-to-Many (Orang Tua can have multiple Santri)
+}
+
+model Ustadz {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nip         String?  @unique
+  namaLengkap String
+  noHp        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jurnalTahfidz JurnalTahfidz[]
+}
+
+model Kelas {
+  id        String   @id @default(cuid())
+  namaKelas String // Contoh: "1A", "2B"
+  tingkat   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  santri Santri[]
+}
+
+model Santri {
+  id           String   @id @default(cuid())
+  nis          String   @unique
+  namaLengkap  String
+  tempatLahir  String?
+  tanggalLahir DateTime?
+  alamat       String?
+  
+  kelasId      String
+  kelas        Kelas    @relation(fields: [kelasId], references: [id])
+  
+  orangTuaId   String?
+  orangTua     User?    @relation(fields: [orangTuaId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  absensi       Absensi[]
+  jurnalTahfidz JurnalTahfidz[]
+}
+
+enum StatusAbsensi {
+  HADIR
+  SAKIT
+  IZIN
+  ALFA
+}
+
+model Absensi {
+  id         String        @id @default(cuid())
+  santriId   String
+  santri     Santri        @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  tanggal    DateTime
+  status     StatusAbsensi
+  keterangan String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+enum JenisSetoran {
+  ZIYADAH
+  MURAJAAH
+}
+
+model JurnalTahfidz {
+  id             String       @id @default(cuid())
+  santriId       String
+  santri         Santri       @relation(fields: [santriId], references: [id], onDelete: Cascade)
+  ustadzId       String
+  ustadz         Ustadz       @relation(fields: [ustadzId], references: [id])
+  tanggal        DateTime
+  jenisSetoran   JenisSetoran
+  namaSurah      String
+  ayatMulai      Int
+  ayatSelesai    Int
+  predikatTajwid String       // A, B, C, D
+  catatan        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
